@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>For Ezoza</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root{--night:#080c2a;--plum:#1d1550;--gold:#f6dc92;--rose:#f2a7bb;--mist:#cdd3f3;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:radial-gradient(ellipse at 50% 100%,var(--plum),var(--night) 70%);color:var(--mist);font-family:"Cormorant Garamond",Georgia,serif}
+canvas,svg{position:fixed;inset:0;width:100%;height:100%}
+svg{pointer-events:none}
+#heart{fill:none;stroke:var(--rose);stroke-width:1.5;stroke-linecap:round;filter:drop-shadow(0 0 6px var(--rose))}
+.star{position:fixed;left:-24px;top:-24px;width:48px;height:48px;border:0;background:none;cursor:pointer;padding:0;transition:transform 2.6s cubic-bezier(.5,0,.2,1)}
+.star::before{content:"";position:absolute;inset:12px;background:var(--mist);clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);filter:drop-shadow(0 0 6px var(--mist));animation:pulse 2.4s ease-in-out infinite;transition:background .6s}
+.star:nth-child(odd)::before{animation-delay:-1.2s}
+.star:focus-visible{outline:2px solid var(--gold);outline-offset:-6px;border-radius:50%}
+.star.on::before{background:var(--gold);inset:6px;filter:drop-shadow(0 0 10px var(--gold));animation:none}
+@keyframes pulse{50%{transform:scale(.7);opacity:.6}}
+#hint,#count{position:fixed;left:0;right:0;text-align:center;margin:0;padding:0 24px;pointer-events:none;transition:opacity 1s}
+#hint{top:7%;font-size:clamp(20px,4.5vw,28px);font-style:italic}
+#count{bottom:5%;font-size:18px;opacity:.7}
+#card{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(8,12,42,.72);cursor:pointer}
+#card.show{display:flex}
+#card div{max-width:30ch;text-align:center;font-size:clamp(26px,6vw,38px);line-height:1.35;font-style:italic;font-weight:500;color:var(--gold);animation:rise .9s ease both}
+#card small{display:block;margin-top:28px;font-size:16px;font-style:normal;color:var(--mist);opacity:.6}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+#end{position:fixed;left:0;right:0;bottom:7%;text-align:center;padding:0 24px;opacity:0;transition:opacity 2s;pointer-events:none}
+#end.show{opacity:1}
+#end h1{margin:0;font-size:clamp(44px,12vw,84px);font-weight:600;letter-spacing:.3em;padding-left:.3em;color:var(--gold)}
+#end p{margin:10px auto 0;max-width:34ch;font-size:clamp(20px,4.5vw,26px);font-style:italic}
+@media(prefers-reduced-motion:reduce){.star,#end{transition-duration:.01s}.star::before,#card div{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<svg id="svg"><path id="heart"/></svg>
+<div id="stage"></div>
+<p id="hint">Nine stars are hiding something for you, Ezoza. Touch them.</p>
+<p id="count"></p>
+<div id="card" role="dialog" aria-live="polite"><div><span id="text"></span><small>tap anywhere to close</small></div></div>
+<div id="end"><h1>EZOZA</h1><p>Every star was a reason. Together they say what I never say enough: you are my favorite everything.</p></div>
+<script>
+// ✏️ EDIT YOUR MESSAGES HERE (9 stars)
+const MSG=[
+"The first time I saw you, I forgot what I was about to say.",
+"Your laugh is my favorite sound in the whole world.",
+"You make ordinary days feel like something worth remembering.",
+"I love how you care about people, quietly and fully.",
+"When I’m tired, thinking of you is the easiest way to smile.",
+"Our little moments that nobody else understands are my treasure.",
+"A promise: I’ll keep choosing you on the easy days and the hard ones.",
+"I don’t need a perfect place. Anywhere is beautiful with you.",
+"Out of all the stars, you’re the one I’d never stop looking at."
+];
+const N=MSG.length,$=id=>document.getElementById(id);
+const stage=$('stage'),card=$('card'),count=$('count'),heart=$('heart');
+const still=matchMedia('(prefers-reduced-motion:reduce)').matches;
+let W,H,opened=0,done=false,busy=false,bg=[];
+const els=[],frac=[];
+for(let i=0;i<N;i++){frac.push([(i%3+.15+Math.random()*.7)/3,(Math.floor(i/3)+.2+Math.random()*.6)/3*.78+.14]);
+const b=document.createElement('button');b.className='star';b.setAttribute('aria-label','Star '+(i+1));
+b.onclick=()=>open(i);stage.appendChild(b);els.push(b)}
+const ctx=$('sky').getContext('2d');
+function hp(t,s,cx,cy){return[cx+16*s*Math.pow(Math.sin(t),3),cy-s*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))]}
+function layout(){W=innerWidth;H=innerHeight;$('sky').width=W;$('sky').height=H;$('svg').setAttribute('viewBox',`0 0 ${W} ${H}`);
+bg=Array.from({length:Math.round(W*H/5000)},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.3+.2,p:Math.random()*6}));
+const s=Math.min(W/38,H/46),cx=W/2,cy=H*.4;
+let d='';for(let k=0;k<=120;k++){const[x,y]=hp(k/120*Math.PI*2,s,cx,cy);d+=(k?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)}
+heart.setAttribute('d',d);
+els.forEach((e,i)=>{const[x,y]=done?hp(i/N*Math.PI*2,s,cx,cy):[frac[i][0]*W,frac[i][1]*H];e.style.transform=`translate(${x}px,${y}px)`})}
+function tick(t){ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';
+for(const o of bg){ctx.globalAlpha=still?.6:.35+.55*Math.abs(Math.sin(t/1400+o.p));ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,7);ctx.fill()}
+if(!still)requestAnimationFrame(tick)}
+function open(i){if(busy||done)return;busy=true;$('text').textContent=MSG[i];card.classList.add('show');
+if(!els[i].classList.contains('on')){els[i].classList.add('on');opened++}
+$('hint').style.opacity=0;count.textContent=opened+' of '+N}
+card.onclick=()=>{card.classList.remove('show');busy=false;if(opened===N)finale()};
+function finale(){done=true;count.style.opacity=0;layout();
+const L=heart.getTotalLength();heart.style.strokeDasharray=L;heart.style.strokeDashoffset=L;
+heart.getBoundingClientRect();heart.style.transition='stroke-dashoffset 3s ease 1.6s';heart.style.strokeDashoffset=0;
+setTimeout(()=>$('end').classList.add('show'),3800)}
+addEventListener('resize',layout);layout();requestAnimationFrame(tick);
+</script>
+</body>
+</html>
